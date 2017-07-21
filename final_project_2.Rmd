@@ -1,0 +1,132 @@
+---
+title: 'Statistical Inference Course Project : Part 2'
+author: "Alaettin Serhan Mete"
+date: "7/21/2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8,
+                      echo=TRUE, warning=FALSE, message=FALSE)
+```
+
+# Basic Inferential Data Analysis
+
+In this part we're going to analyze the ToothGrowth data in the R datasets package.
+We're going to use confidence intervals and hypothesis tests to compare tooth growth by supp and dose.
+Let's first load the dataset and print some summary information, along with a 
+few explatory histograms:
+
+```{r}
+# Load the tooth growth data
+dataset <- ToothGrowth
+
+# Print some basic summary of the data
+print(str(dataset))
+
+# Print some basic summary of the data
+print(summary(dataset))
+```
+
+```{r}
+# Let's quickly look at 1-D histograms of len an dose
+hist(dataset$len, 
+     main = "Histogram of Tooth Length",
+     xlab = "Tooth length",
+     ylab = "Frequency",
+     ylim = c(0,20), 
+     col  = "cyan",
+     lwd  = 3)
+
+# Let's quickly look at 1-D histograms of len an dose
+hist(dataset$dose, 
+     main = "Histogram of Dose",
+     xlab = "Dose (milligrams/day)",
+     ylab = "Frequency",
+     ylim = c(0,25), 
+     col  = "magenta",
+     lwd  = 3)
+```
+
+As one can see there are:
+
+*  Two different supplement types : OJ (orange juice) and VC (vitamin C)
+*  Three different dose types : 0.5, 1.0 and 2.0 (milligrams/day)
+*  The tooth length varies from 0 to 35 (I'm guessing in units of mm?)
+
+Now, let's make a box plot to see how tooth lenght varies with the supplement type
+and dose:
+
+```{r}
+# Now plot length~supp
+boxplot(len~supp+dose, data = dataset,
+        main = "Tooth Growth for Different Supplement Types and Doses",
+        xlab = "Supplement Type (OJ, VC) . Dose (0.5, 1, 2)", ylab = "Length",
+        col  = c("blue","green"))
+axis(side = 2, lwd = 3)
+```
+
+In this plot, the color blue corresponds to supplement type OJ and green corresponds to VC.
+The distribution is further split into dose types, namely 0.5, 1, and 2 milligram/day. 
+Each box shows the 25 and 75 percentiles with the horizantal black line in the middle showing the median.
+
+There are a few basic information one can gather from this plot. 
+It seems as if as the dose increases, the tooth length also increases.
+Except for the dose of 2 milligrams per day, the median tooth length for the supplementary type OJ
+is larger than the supplementary type VC. For the dose of 2 milligrams per day, they are about the same.
+
+Now let's run some tests to quantify these features:
+
+Let's first check if there is a disagreement between supplement types (for all doses combined):
+
+```{r}
+# Let's perform t-test
+t.test(len ~ supp, paired = FALSE, var.equal = FALSE, data = dataset)
+```
+
+As can be seen the 95% CL spans the interval [-0.17, 7.57] including zero, meaning
+one cannot reject the null hypothesis (there is no dependence on the supplement type).
+Therefore, one can say, with 95% CL, both supplement types result in comparable tooth growth. 
+
+Now let's run some tests to see if there is a correlation between the tooth growth and the supplementary doses
+ (for both types combined):
+
+```{r}
+# First split the data into dose types:
+low.mid.dose  <- subset(dataset, dose %in% c(0.5,1.0))
+mid.high.dose <- subset(dataset, dose %in% c(1.0,2.0))
+low.high.dose <- subset(dataset, dose %in% c(0.5,2.0))
+```
+
+```{r}
+# Let's perform t-test for the 0.5 and 1.0
+t.test(len ~ dose, paired = FALSE, var.equal = FALSE, data = low.mid.dose)
+```
+
+```{r}
+# Let's perform t-test for the 1.0 and 2.0
+t.test(len ~ dose, paired = FALSE, var.equal = FALSE, data = mid.high.dose)
+```
+
+```{r}
+# Let's perform t-test for the 0.5 and 2.0
+t.test(len ~ dose, paired = FALSE, var.equal = FALSE, data = low.high.dose)
+```
+
+In all three tests, we see that none of the 95% CL intervals include zero and they are always 
+on the negative side (remember we have the lower dose - higher dose in the test). Therefore,
+we can claim, w/ 95% CL, that the tooth growth increases as the supplementary dose increases 
+(i.e. they are positively correlated).
+
+Our assumptions on these tests were:
+
+ * Test subjects are randomly assigned type/dose therefore we performed unpaired tests,
+ * For each invidual group we didn't assume a common variance (i.e var.equal = FALSE), 
+ this could've been assumed otherwise too.
+
+To wrap up, when all doses are combined, we see that there is no strong evidence that suggests that 
+the tooth grow depends on the supplement type. Moreover, when supplement types are combined, we see that
+there is an evidence that suggests a positive correlation between the amount of dose and the tooth growth
+(i.e. the larger the dose the larger the tooth grow).
